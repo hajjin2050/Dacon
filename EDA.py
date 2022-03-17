@@ -9,6 +9,7 @@ import cv2
 from glob import glob
 from tqdm import tqdm
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import warnings
@@ -126,7 +127,7 @@ grow_dict = {11: '유모기',
 #변수값을 각 의미하는 이름으로 mapping
 
 tr_json_df['label_code'] =  tr_json_df['작물'].astype(str) + '_'  + tr_json_df['질병명'] + '_' + tr_json_df['피해정도'].astype(str)
-print(f"train data에 존재하는 class 수: {tr_json_df['label_code'].nunique()}")
+print(f"train data에 존재하는 class 수: {tr_json_df['label_code'].nunique()}") #train data에 존재하는 class 수: 25
 
 tr_json_df['작물'] = tr_json_df['작물'].map(crop_dict) + '(' + tr_json_df['작물'].astype(str) + ')'
 tr_json_df['질병명'] = tr_json_df['질병명'].map(disease_dict) + '(' + tr_json_df['질병명'].astype(str) + ')'
@@ -136,4 +137,45 @@ tr_json_df['촬영부위'] = tr_json_df['촬영부위'].map(area_dict) + '(' + t
 tr_json_df['생육단계'] = tr_json_df['생육단계'].map(grow_dict) + '(' + tr_json_df['생육단계'].astype(str) + ')'
 
 tr_json_df['label_name'] =  tr_json_df['작물'].astype(str) + '_'  + tr_json_df['질병명'] + '_' + tr_json_df['피해정도'].astype(str)
+
+import platform
+from matplotlib import font_manager, rc
+import warnings
+warnings.filterwarnings("ignore")
+#한글깨짐 방지
+mpl.rcParams['axes.unicode_minus'] = False
+plt.rcParams["font.family"] = 'NanumGothic'
+
+#1.class 분포
+f, axs = plt.subplots(2,3,figsize=(15,10))
+axs = axs.flatten()
+for i, col in enumerate(['작물', '질병명', '피해정도', '데이터종류', '촬영부위', '생육단계']):
+    object_cnt = tr_json_df[col].value_counts().sort_values(ascending=False)
+    axs[i].bar(object_cnt.index, object_cnt.values, color=['#d4dddd' if i%2==0 else '#F5DEB3' for i in range(9)])
+    for x,y,z in zip(object_cnt.index, object_cnt.values,object_cnt.values/object_cnt.sum()*100):                                       # <--
+        axs[i].annotate('%d\n(%d%%)' %(int(y),z), xy=(x,y+70), textcoords='data', ha = 'center') 
+    axs[i].axis(ymin=0,ymax=int(max(object_cnt)*1.1))
+    axs[i].set_xticklabels(object_cnt.index, rotation = 90,fontsize = 11)
+    axs[i].set_title(col)
+f.tight_layout()
+plt.savefig("Class_col.png")
+
+f, axs = plt.subplots(1,1,figsize=(15,8))
+# axs = axs.flatten()
+for i, col in enumerate(['label_name']):
+    object_cnt = tr_json_df[col].value_counts().sort_values(ascending=False)
+    axs.bar(object_cnt.index, object_cnt.values)
+    for x,y,z in zip(object_cnt.index, object_cnt.values,object_cnt.values/object_cnt.sum()*100):                                       # <--
+        axs.annotate('%d\n(%d%%)' %(int(y),z), xy=(x,y+30), textcoords='data', ha = 'center') 
+    axs.axis(ymin=0,ymax=int(max(object_cnt)*1.1))
+    axs.set_xticklabels(object_cnt.index, rotation = 75)
+    axs.set_title(col)
+f.tight_layout()
+plt.savefig("Class_label.png")
+
+
+#2.각 class 별 관계도
+
+# 작물,질병,피해정도 비교
+
 
